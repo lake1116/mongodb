@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+
+<html lang="ko">
+
+<head>
+
+  <meta charset="UTF-8" />
+
+  <title>과학실 물품 위치 검색</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <style>
+
+    body {
+
+      font-family: sans-serif;
+
+      background-color: #eef7ff;
+
+      margin: 0;
+
+      padding: 0;
+
+      display: flex;
+
+      height: 100vh;
+
+    }
+
+
+
+    .container {
+
+      display: flex;
+
+      width: 100%;
+
+    }
+
+
+
+    .left {
+
+      flex: 2;
+
+      padding: 2rem;
+
+    }
+
+
+
+    .right {
+
+      flex: 1;
+
+      background-color: #ffffff;
+
+      border-left: 1px solid #ccc;
+
+      padding: 2rem;
+
+      overflow-y: auto;
+
+    }
+
+
+
+    input[type="text"] {
+
+      width: 100%;
+
+      padding: 12px;
+
+      font-size: 16px;
+
+      border-radius: 8px;
+
+      border: 1px solid #ccc;
+
+      margin-bottom: 20px;
+
+      box-sizing: border-box;
+
+    }
+
+
+
+    #map-container {
+
+      position: relative;
+
+      width: 100%;
+
+      margin-top: 20px;
+
+    }
+
+
+
+    #map-container img {
+
+      width: 100%;
+
+      border-radius: 10px;
+
+    }
+
+
+
+    .marker {
+
+      position: absolute;
+
+      width: 20px;
+
+      height: 20px;
+
+      background: red;
+
+      border-radius: 50%;
+
+      border: 2px solid white;
+
+      transform: translate(-50%, -50%);
+
+      animation: blink 1s infinite;
+
+    }
+
+
+
+    @keyframes blink {
+
+      0%, 100% { opacity: 1; }
+
+      50% { opacity: 0.3; }
+
+    }
+
+
+
+    .right h3 {
+
+      margin-top: 0;
+
+    }
+
+    .list-header {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    margin-bottom: 10px;
+
+    }
+
+
+
+    .list-header h3 {
+
+    margin: 0;
+
+    }
+
+
+
+    .click-hint {
+
+    font-size: 10px;
+
+    color: #555;
+
+    white-space: nowrap;
+
+    }
+
+    .item-list {
+
+      list-style: none;
+
+      padding: 0;
+
+    }
+
+
+
+    .item-list li {
+
+      padding: 10px 0;
+
+      border-bottom: 1px solid #ddd;
+
+      cursor: pointer;
+
+    }
+
+
+
+    .location-tag {
+
+      color: #777;
+
+      font-size: 14px;
+
+    }
+
+
+
+    /* ✅ 반응형 미디어 쿼리 */
+
+    @media (max-width: 768px) {
+
+      body {
+
+        flex-direction: column;
+
+        height: auto;
+
+      }
+
+
+
+      .container {
+
+        flex-direction: column;
+
+      }
+
+
+
+      .left, .right {
+
+        width: 100%;
+
+        padding: 1.5rem;
+
+      }
+
+
+
+      .right {
+
+        border-left: none;
+
+        border-top: 1px solid #ccc;
+
+      }
+
+
+
+      input[type="text"] {
+
+        font-size: 18px;
+
+        padding: 14px;
+
+      }
+
+
+
+      .item-list li {
+
+        font-size: 16px;
+
+        padding: 12px 0;
+
+      }
+
+    }
+
+  </style>
+
+</head>
+
+<body>
+
+
+
+  <div class="container">
+
+    <!-- 왼쪽: 검색 + 약도 -->
+
+    <div class="left">
+
+      <h2>🔍 과학실 물품 검색</h2>
+
+      <input type="text" id="searchBox" placeholder="예: 비커, 알코올 램프 등" />
+
+
+
+      <ul id="itemList" style="display:none;">
+
+        <li data-name="알코올 램프" data-location="lab1"></li>
+
+        <li data-name="비커" data-location="lab1"></li>
+
+        <li data-name="삼각 플라스크" data-location="lab2"></li>
+
+        <li data-name="시험관" data-location="lab2"></li>
+
+        <li data-name="가열판" data-location="prep"></li>
+
+        <li data-name="PH 측정기" data-location="lab2"></li>
+
+        <li data-name="전자저울" data-location="lab2"></li>
+
+        <li data-name="시약병" data-location="lab1"></li>
+
+        <li data-name="석면망" data-location="prep"></li>
+
+      </ul>
+
+
+
+      <div id="map-container">
+
+        <img src="floor-map.png" alt="과학실 약도" />
+
+
+
+        <!-- 위치 마커 -->
+
+        <div id="marker-lab1" class="marker" style="top: 30%; left: 25%; display: none;"></div>
+
+        <div id="marker-lab2" class="marker" style="top: 30%; left: 70%; display: none;"></div>
+
+        <div id="marker-prep" class="marker" style="top: 80%; left: 50%; display: none;"></div>
+
+      </div>
+
+    </div>
+
+
+
+    <!-- 오른쪽: 물품 리스트 -->
+
+    <div class="right">
+
+      <div class="list-header">
+
+        <h3>📦 과학실 물품 리스트</h3>
+
+        <span class="click-hint">리스트 물품을 클릭하여 검색 가능</span>
+
+      </div>
+
+      <ul class="item-list">
+
+        <li data-name="알코올 램프">알코올 램프 <span class="location-tag">– 과학실 1</span></li>
+
+        <li data-name="비커">비커 <span class="location-tag">– 과학실 1</span></li>
+
+        <li data-name="삼각 플라스크">삼각 플라스크 <span class="location-tag">– 과학실 2</span></li>
+
+        <li data-name="시험관">시험관 <span class="location-tag">– 과학실 2</span></li>
+
+        <li data-name="가열판">가열판 <span class="location-tag">– 준비실</span></li>
+
+        <li data-name="PH 측정기">PH 측정기 <span class="location-tag">– 과학실 2</span></li>
+
+        <li data-name="전자저울">전자저울 <span class="location-tag">– 과학실 2</span></li>
+
+        <li data-name="시약병">시약병 <span class="location-tag">– 과학실 1</span></li>
+
+        <li data-name="석면망">석면망 <span class="location-tag">– 준비실</span></li>
+
+      </ul>
+
+    </div>
+
+  </div>
+
+
+
+  <script>
+
+    const searchBox = document.getElementById("searchBox");
+
+    const items = document.querySelectorAll("#itemList li");
+
+    const markers = {
+
+      lab1: document.getElementById("marker-lab1"),
+
+      lab2: document.getElementById("marker-lab2"),
+
+      prep: document.getElementById("marker-prep")
+
+    };
+
+
+
+    function hideAllMarkers() {
+
+      Object.values(markers).forEach(marker => marker.style.display = "none");
+
+    }
+
+
+
+    function triggerSearch(term) {
+
+      const lowerTerm = term.trim().toLowerCase();
+
+      hideAllMarkers();
+
+
+
+      if (lowerTerm === "") return;
+
+
+
+      items.forEach(item => {
+
+        const name = item.dataset.name.toLowerCase();
+
+        const location = item.dataset.location;
+
+
+
+        if (name.includes(lowerTerm)) {
+
+          if (markers[location]) {
+
+            markers[location].style.display = "block";
+
+          }
+
+        }
+
+      });
+
+    }
+
+
+
+    searchBox.addEventListener("input", () => {
+
+      triggerSearch(searchBox.value);
+
+    });
+
+
+
+    // 리스트 클릭 시 검색창에 입력하고 마커 표시
+
+    document.querySelectorAll(".item-list li").forEach(item => {
+
+      item.addEventListener("click", () => {
+
+        const itemName = item.dataset.name;
+
+        searchBox.value = itemName;
+
+        triggerSearch(itemName);
+
+      });
+
+    });
+
+  </script>
+
+
+
+</body>
+
+</html>
+
